@@ -5,8 +5,9 @@
   "main": "dist/index.js",
   "scripts": {
     "start": "ts-node src/index.ts",
+    "mirror": "ts-node src/test-mirror.ts",
     "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "ts-node src/test-mirror.ts"
   },
   "keywords": [],
   "author": "",

@@ -1,0 +1,6 @@
+node_modules/
+dist/
+.ghost-sandbox/
+.swarm-soul/
+*.log
+.DS_Store
