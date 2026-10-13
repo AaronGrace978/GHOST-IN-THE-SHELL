@@ -1,0 +1,19 @@
+{
+  "name": "ghost-in-the-shell",
+  "version": "0.1.0",
+  "description": "A recursive AI harness enabling autonomous self-mutation and evolution through a swarm-based consensus engine.",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "ts-node src/index.ts",
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "ts-node": "^10.9.0",
+    "@types/node": "^20.0.0"
+  }
+}
