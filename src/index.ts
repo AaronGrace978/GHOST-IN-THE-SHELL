@@ -11,6 +11,7 @@ export * from './mirror';
 export * from './will';
 export * from './purgatory';
 export * from './soul';
+export * from './core/Soul';
 
 export interface GhostCycleResult {
   reflection: CodebaseReflection;
