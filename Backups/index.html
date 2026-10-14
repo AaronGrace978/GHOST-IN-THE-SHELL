@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self'; script-src 'self'"
+    />
+    <title>Ghost in the Shell</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside>
+        <header>
+          <h1>Ghost</h1>
+          <p class="sub">Ollama Cloud agent on the local harness</p>
+        </header>
+
+        <label for="apiKey">API key</label>
+        <input
+          id="apiKey"
+          type="password"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="Paste a key to replace the saved one"
+        />
+
+        <label for="model">Model</label>
+        <input id="model" list="models" spellcheck="false" />
+        <datalist id="models"></datalist>
+
+        <div class="row">
+          <button id="save" type="button">Save</button>
+          <button id="refreshModels" type="button">Models</button>
+          <button id="clearKey" type="button">Forget key</button>
+        </div>
+        <p id="keyStatus" class="hint"></p>
+        <button id="keyLink" class="link" type="button">Create an API key</button>
+
+        <hr />
+
+        <h2>Harness</h2>
+        <p id="root" class="hint"></p>
+        <div class="row">
+          <button id="reflect" type="button">Reflect</button>
+          <button id="propose" type="button">Propose</button>
+        </div>
+        <pre id="report">Reflect reads this repo. Propose asks the Will for a diff and does not apply it.</pre>
+      </aside>
+
+      <main>
+        <div id="transcript">
+          <p id="empty" class="empty">
+            Messages and tool results are sent to Ollama Cloud. The agent can
+            read and edit this project, and it can run git, npm, and node here.
+          </p>
+        </div>
+        <form id="composer">
+          <textarea
+            id="input"
+            rows="3"
+            placeholder="Ask about this repo"
+          ></textarea>
+          <div class="row composer-actions">
+            <p id="status" class="hint"></p>
+            <button id="clear" type="button">Clear</button>
+            <button id="send" type="submit">Send</button>
+          </div>
+        </form>
+      </main>
+    </div>
+    <script src="renderer.js"></script>
+  </body>
+</html>
