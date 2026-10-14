@@ -7,14 +7,16 @@
     "start": "ts-node src/index.ts",
     "mirror": "ts-node src/test-mirror.ts",
     "build": "tsc",
-    "test": "ts-node src/test-mirror.ts"
+    "test": "ts-node src/test-mirror.ts",
+    "app": "node node_modules/electron/install.js && tsc -p tsconfig.electron.json && electron dist/app/main.js"
   },
   "keywords": [],
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0",
+    "electron": "^44.7.1",
     "ts-node": "^10.9.0",
-    "@types/node": "^20.0.0"
+    "typescript": "^5.0.0"
   }
 }

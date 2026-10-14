@@ -30,6 +30,10 @@ export interface GhostCycleResult {
  * 4. The Purgatory (Docker / Isolated Shadow Sandbox)
  * 5. The Soul (Swarm-Soul Event Log & Consensus Layer)
  */
+export interface GhostOptions {
+  allowedHosts?: string[];
+}
+
 export class GhostInTheShell {
   public readonly body: BodyHarness;
   public readonly mirror: Mirror;
@@ -37,8 +41,11 @@ export class GhostInTheShell {
   public readonly purgatory: PurgatorySandbox;
   public readonly soul: SwarmSoul;
 
-  constructor(rootDir?: string) {
-    this.body = new BodyHarness({ rootDir });
+  constructor(rootDir?: string, options: GhostOptions = {}) {
+    this.body = new BodyHarness({
+      rootDir,
+      allowedHosts: options.allowedHosts,
+    });
     this.mirror = new Mirror(this.body);
     this.will = new WillEngine(this.body, this.mirror);
     this.purgatory = new PurgatorySandbox(this.body);
