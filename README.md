@@ -1,6 +1,8 @@
 # 👻 GHOST-IN-THE-SHELL
 **The Recursive AI Evolution Harness**
 
+![Ghost in the Shell](assets/ghost-banner.jpg)
+
 `GHOST-IN-THE-SHELL` is an experimental framework designed to enable Large Language Models (LLMs) to autonomously mutate their own source code, test those mutations in isolated environments, and evolve their own capabilities through a swarm-based consensus mechanism.
 
 ## 🌌 The Vision
@@ -25,6 +27,9 @@ Integrating the principles of `Swarm-Soul`, multiple instances of the Mind revie
 - [ ] **Phase 2: The Spark** - Enable the generation of valid TypeScript diffs and automated testing in a sandbox.
 - [ ] **Phase 3: The Swarm** - Implement the consensus voting mechanism for mutation merges.
 - [ ] **Phase 4: The Ghost** - Achieve the first autonomous, performance-increasing self-mutation.
+
+## Launch
+On Windows, double-click `ghost.bat`. The first run installs dependencies, then opens the desktop agent. You can also run `npm run app`.
 
 ## 🛠️ Tech Stack
 - **Language:** TypeScript / Node.js
