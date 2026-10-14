@@ -31,6 +31,8 @@ Integrating the principles of `Swarm-Soul`, multiple instances of the Mind revie
 ## Launch
 On Windows, double-click `ghost.bat`. The first run installs dependencies, then opens the desktop agent. You can also run `npm run app`.
 
+The desktop window is a fixed shell. The sidebar, Neural Console transcript, Mirror view, Swarm-Soul ledger, and Source Inspector each scroll on their own. The message composer stays pinned under the transcript.
+
 ## 🛠️ Tech Stack
 - **Language:** TypeScript / Node.js
 - **Identity:** Swarm-Soul Event Log
