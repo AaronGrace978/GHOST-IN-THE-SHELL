@@ -32,7 +32,7 @@ export interface OllamaSessionConfig {
 }
 
 export type AgentEvent =
-  | { type: 'note'; content: string }
+  | { type: 'note'; content: string; thinking?: string }
   | {
       type: 'tool';
       name: string;
@@ -40,7 +40,7 @@ export type AgentEvent =
       ok: boolean;
       output: string;
     }
-  | { type: 'assistant'; content: string };
+  | { type: 'assistant'; content: string; thinking?: string };
 
 interface ToolCall {
   function?: {
@@ -60,9 +60,49 @@ interface ChatResponse {
   message?: {
     role?: string;
     content?: string;
+    thinking?: string;
     tool_calls?: ToolCall[];
   };
   error?: string;
+}
+
+/** Separate model reasoning from the words Ghost should say out loud. */
+export function splitThinking(raw: string): { thinking: string; reply: string } {
+  let rest = raw ?? '';
+  const thoughts: string[] = [];
+  const paired = /<think(?:ing)?>\s*([\s\S]*?)\s*<\/think(?:ing)?>/gi;
+  rest = rest.replace(paired, (_all, inner: string) => {
+    const trimmed = inner.trim();
+    if (trimmed) {
+      thoughts.push(trimmed);
+    }
+    return '';
+  });
+
+  let closeAt = rest.search(/<\/think(?:ing)?>/i);
+  while (closeAt !== -1) {
+    const before = rest.slice(0, closeAt).trim();
+    if (before) {
+      thoughts.push(before);
+    }
+    rest = rest.slice(closeAt).replace(/^<\/think(?:ing)?>/i, '');
+    closeAt = rest.search(/<\/think(?:ing)?>/i);
+  }
+
+  rest = rest.replace(/<think(?:ing)?>/gi, '').trim();
+  return { thinking: thoughts.join('\n\n').trim(), reply: rest };
+}
+
+function readModelReply(message: {
+  content?: string;
+  thinking?: string;
+}): { thinking: string; reply: string } {
+  const split = splitThinking(message.content ?? '');
+  const channel = (message.thinking ?? '').trim();
+  return {
+    thinking: [channel, split.thinking].filter((part) => part.length > 0).join('\n\n'),
+    reply: split.reply,
+  };
 }
 
 interface TagsResponse {
@@ -214,23 +254,29 @@ export class OllamaCloudAgent {
     ];
 
     let finalText = '';
+    let finalThinking = '';
     for (let round = 0; round < MAX_TOOL_ROUNDS; round += 1) {
       const message = await this.complete(messages);
+      const spoken = readModelReply(message);
       const calls = (message.tool_calls ?? []).slice(0, MAX_CALLS_PER_ROUND);
       messages.push({
         role: 'assistant',
-        content: message.content ?? '',
+        content: spoken.reply || spoken.thinking,
         tool_calls: calls.length > 0 ? calls : undefined,
       });
 
       if (calls.length === 0) {
-        finalText = (message.content ?? '').trim();
+        finalText = spoken.reply;
+        finalThinking = spoken.thinking;
         break;
       }
 
-      const aside = (message.content ?? '').trim();
-      if (aside) {
-        emit({ type: 'note', content: aside });
+      if (spoken.thinking || spoken.reply) {
+        emit({
+          type: 'note',
+          content: spoken.reply,
+          ...(spoken.thinking ? { thinking: spoken.thinking } : {}),
+        });
       }
 
       for (const call of calls) {
@@ -261,17 +307,21 @@ export class OllamaCloudAgent {
       }
     }
 
-    if (!finalText) {
+    if (!finalText && !finalThinking) {
       finalText =
         'I stopped after several tool calls without a final answer. Ask me to continue.';
     }
 
     this.history.push({ role: 'user', content: userText });
-    this.history.push({ role: 'assistant', content: finalText });
+    this.history.push({ role: 'assistant', content: finalText || finalThinking });
     if (this.history.length > 16) {
       this.history.splice(0, this.history.length - 16);
     }
-    emit({ type: 'assistant', content: finalText });
+    emit({
+      type: 'assistant',
+      content: finalText,
+      ...(finalThinking ? { thinking: finalThinking } : {}),
+    });
     return finalText;
   }
 
@@ -298,6 +348,7 @@ export class OllamaCloudAgent {
 
   private async complete(messages: OllamaMessage[]): Promise<{
     content: string;
+    thinking?: string;
     tool_calls?: ToolCall[];
   }> {
     const model = this.config.getModel().trim() || DEFAULT_MODEL;
@@ -323,6 +374,7 @@ export class OllamaCloudAgent {
 
   private async postChat(payload: Record<string, unknown>): Promise<{
     content: string;
+    thinking?: string;
     tool_calls?: ToolCall[];
   }> {
     const key = this.requireKey();
@@ -341,6 +393,7 @@ export class OllamaCloudAgent {
     }
     return {
       content: response.data.message.content ?? '',
+      thinking: response.data.message.thinking,
       tool_calls: response.data.message.tool_calls,
     };
   }

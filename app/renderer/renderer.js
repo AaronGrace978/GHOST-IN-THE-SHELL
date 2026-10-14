@@ -57,12 +57,12 @@ let lastProposal = null;
 
 api.setChatHandler((event) => {
   if (event.type === 'assistant') {
-    addBlock('assistant', 'Ghost', event.content || '');
+    addBlock('assistant', 'Ghost', event.content || '', event.thinking || '');
     void refreshSoulLedger();
     return;
   }
   if (event.type === 'note') {
-    addBlock('note', 'Ghost · Thought', event.content || '');
+    addBlock('note', 'Ghost · Thought', event.content || '', event.thinking || '');
     return;
   }
   if (event.type === 'tool') {
@@ -647,7 +647,34 @@ function dismissEmpty() {
   }
 }
 
-function addBlock(kind, label, text) {
+function splitThinking(raw) {
+  let rest = raw || '';
+  const thoughts = [];
+  const paired = /<think(?:ing)?>\s*([\s\S]*?)\s*<\/think(?:ing)?>/gi;
+  rest = rest.replace(paired, (_all, inner) => {
+    const trimmed = String(inner).trim();
+    if (trimmed) thoughts.push(trimmed);
+    return '';
+  });
+
+  let closeAt = rest.search(/<\/think(?:ing)?>/i);
+  while (closeAt !== -1) {
+    const before = rest.slice(0, closeAt).trim();
+    if (before) thoughts.push(before);
+    rest = rest.slice(closeAt).replace(/^<\/think(?:ing)?>/i, '');
+    closeAt = rest.search(/<\/think(?:ing)?>/i);
+  }
+
+  rest = rest.replace(/<think(?:ing)?>/gi, '').trim();
+  return { thinking: thoughts.join('\n\n').trim(), reply: rest };
+}
+
+function addBlock(kind, label, text, thinking) {
+  const split = splitThinking(text);
+  const thought = [thinking, split.thinking].filter(Boolean).join('\n\n').trim();
+  const reply = split.reply;
+  if (!thought && !reply) return;
+
   dismissEmpty();
   const article = document.createElement('article');
   article.className = `msg ${kind}`;
@@ -664,12 +691,31 @@ function addBlock(kind, label, text) {
   time.textContent = new Date().toLocaleTimeString();
 
   header.append(heading, time);
+  article.append(header);
 
-  const body = document.createElement('div');
-  body.className = 'msg-body';
-  renderFormattedContent(body, text);
+  if (thought) {
+    const think = document.createElement('div');
+    think.className = 'thinking';
 
-  article.append(header, body);
+    const thinkLabel = document.createElement('span');
+    thinkLabel.className = 'thinking-label';
+    thinkLabel.textContent = 'Thinking';
+
+    const thinkBody = document.createElement('div');
+    thinkBody.className = 'thinking-body';
+    thinkBody.textContent = thought;
+
+    think.append(thinkLabel, thinkBody);
+    article.append(think);
+  }
+
+  if (reply) {
+    const body = document.createElement('div');
+    body.className = 'msg-body';
+    renderFormattedContent(body, reply);
+    article.append(body);
+  }
+
   transcript.append(article);
   transcript.scrollTop = transcript.scrollHeight;
 }

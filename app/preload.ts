@@ -3,6 +3,7 @@ import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
 export interface ChatEvent {
   type: 'note' | 'tool' | 'assistant';
   content?: string;
+  thinking?: string;
   name?: string;
   detail?: string;
   ok?: boolean;
