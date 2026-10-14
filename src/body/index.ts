@@ -146,6 +146,62 @@ export class BodyHarness {
   }
 
   /**
+   * FileSystem Primitive: Search text files inside a directory for matching lines.
+   */
+  public async search(
+    query: string,
+    subDir = '.',
+    extensions: string[] = ['.ts', '.js', '.json', '.md', '.html', '.css'],
+    maxMatches = 40
+  ): Promise<Array<{ file: string; line: number; text: string }>> {
+    const trimmed = query.trim();
+    if (!trimmed) {
+      return [];
+    }
+    const files = await this.listFiles(subDir, extensions);
+    const needle = trimmed.toLowerCase();
+    const matches: Array<{ file: string; line: number; text: string }> = [];
+
+    for (const file of files) {
+      if (matches.length >= maxMatches) {
+        break;
+      }
+      const base = path.basename(file);
+      if (
+        base === '.env' ||
+        base.startsWith('.env.') ||
+        base === 'credentials.json' ||
+        base === 'id_rsa' ||
+        base.endsWith('.pem') ||
+        base.endsWith('.key')
+      ) {
+        continue;
+      }
+      let text: string;
+      try {
+        text = await this.readFile(file);
+      } catch {
+        continue;
+      }
+      if (text.includes('\0') || text.length > 250_000) {
+        continue;
+      }
+      const lines = text.split(/\r?\n/);
+      for (let i = 0; i < lines.length && matches.length < maxMatches; i += 1) {
+        if (lines[i].toLowerCase().includes(needle)) {
+          matches.push({
+            file,
+            line: i + 1,
+            text: lines[i].trim().slice(0, 220),
+          });
+        }
+      }
+    }
+
+    return matches;
+  }
+
+  /**
    * Reads a file along with metadata and SHA-256 integrity digest.
    */
   public async inspectFile(relativePath: string): Promise<FileEntry> {

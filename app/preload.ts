@@ -23,6 +23,12 @@ contextBridge.exposeInMainWorld('ghost', {
   listModels: () => ipcRenderer.invoke('models:list'),
   reflect: () => ipcRenderer.invoke('harness:reflect'),
   propose: () => ipcRenderer.invoke('harness:propose'),
+  evolve: (options?: { applyMerge?: boolean }) =>
+    ipcRenderer.invoke('harness:evolve', options),
+  soulEvents: () => ipcRenderer.invoke('soul:events'),
+  listFiles: () => ipcRenderer.invoke('files:list'),
+  readFile: (relativePath: string) =>
+    ipcRenderer.invoke('files:read', relativePath),
   status: () => ipcRenderer.invoke('harness:status'),
   sendChat: (text: string) => ipcRenderer.invoke('chat:send', text),
   clearChat: () => ipcRenderer.invoke('chat:clear'),

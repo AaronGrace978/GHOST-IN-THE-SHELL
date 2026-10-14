@@ -280,9 +280,11 @@ export class OllamaCloudAgent {
       `You are Ghost, a coding agent for the local project at ${this.ghost.body.rootDir}.`,
       'File access goes through the Ghost harness and must stay inside this project.',
       'Use reflect, list_files, search, and read_file before claiming what the code does.',
-      'write_file changes the project immediately. propose_mutation only returns a diff and does not apply it.',
+      'write_file changes the project immediately; when modifying .ts files, it automatically validates compilation via tsc -p tsconfig.electron.json --noEmit and rolls back broken edits.',
+      'propose_mutation only returns a diff and does not apply it.',
       'exec_command can run git, npm, npx, node, tsc, or ts-node. git push, git reset, npm publish, and node -e are blocked.',
-      'Do not invent file contents. After a write, say which path changed. Keep answers short.',
+      'Never remove exported symbols like defaultModel or OllamaCloudAgent when editing src/agent/ollamaCloud.ts or app/main.ts.',
+      'Do not invent file contents. After a write, say which path changed. Keep answers short and clear.',
     ].join(' ');
   }
 
@@ -418,35 +420,13 @@ export class OllamaCloudAgent {
       typeof args.subDir === 'string' && args.subDir.trim()
         ? assertRelative(args.subDir)
         : '.';
-    const files = await this.ghost.body.listFiles(subDir, [
-      '.ts',
-      '.js',
-      '.json',
-      '.md',
-      '.html',
-      '.css',
-    ]);
-    const needle = query.toLowerCase();
-    const hits: string[] = [];
-    for (const file of files) {
-      if (hits.length >= 30) {
-        break;
-      }
-      if (isSecretPath(file)) {
-        continue;
-      }
-      const text = await this.ghost.body.readFile(file);
-      if (text.includes('\0') || text.length > 200_000) {
-        continue;
-      }
-      const lines = text.split(/\r?\n/);
-      for (let i = 0; i < lines.length && hits.length < 30; i += 1) {
-        if (lines[i].toLowerCase().includes(needle)) {
-          hits.push(`${file}:${i + 1}: ${lines[i].trim().slice(0, 200)}`);
-        }
-      }
-    }
-    return hits.join('\n') || 'No matches.';
+    const matches = await this.ghost.body.search(query, subDir);
+    return (
+      matches
+        .slice(0, 30)
+        .map((m) => `${m.file}:${m.line}: ${m.text}`)
+        .join('\n') || 'No matches.'
+    );
   }
 
   private async readFile(args: Record<string, unknown>): Promise<string> {
@@ -467,7 +447,35 @@ export class OllamaCloudAgent {
     if (content.length > 150_000) {
       throw new Error('Refusing to write more than 150000 characters.');
     }
+
+    const existedBefore = await this.ghost.body.exists(relativePath);
+    const previousContent = existedBefore
+      ? await this.ghost.body.readFile(relativePath)
+      : null;
+
     await this.ghost.body.writeFile(relativePath, content);
+
+    // Self-preservation guardrail: verify TypeScript compilation when .ts files are modified.
+    if (relativePath.endsWith('.ts')) {
+      const checkOutput = await this.execCommand({
+        command: 'tsc',
+        args: ['-p', 'tsconfig.electron.json', '--noEmit'],
+      });
+      if (!checkOutput.startsWith('exit 0 ')) {
+        if (previousContent !== null) {
+          await this.ghost.body.writeFile(relativePath, previousContent);
+        } else {
+          await this.ghost.body.deleteFile(relativePath).catch(() => {});
+        }
+        throw new Error(
+          `Write to ${relativePath} failed TypeScript validation and was automatically rolled back to protect the Ghost genome:\n${clampText(
+            checkOutput,
+            2_500
+          )}`
+        );
+      }
+    }
+
     return `Wrote ${relativePath} (${content.length} characters).`;
   }
 

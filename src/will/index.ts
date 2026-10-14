@@ -80,6 +80,15 @@ export class WillEngine {
   }
 
   /**
+   * Alias for proposeNextMutation to maintain compatibility with agent callers.
+   */
+  public async proposeMutation(
+    existingReflection?: CodebaseReflection
+  ): Promise<MutationProposal | null> {
+    return this.proposeNextMutation(existingReflection);
+  }
+
+  /**
    * Ranks detected bottlenecks from highest to lowest severity.
    */
   public prioritizeBottlenecks(

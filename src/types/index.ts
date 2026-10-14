@@ -126,7 +126,8 @@ export type SwarmEventType =
   | 'QUORUM_REACHED'
   | 'MUTATION_MERGED'
   | 'MUTATION_REJECTED'
-  | 'AGENT_ACTION';
+  | 'AGENT_ACTION'
+  | 'TOOL_EXECUTED';
 
 export interface SwarmSoulEvent<TPayload = unknown> {
   index: number;

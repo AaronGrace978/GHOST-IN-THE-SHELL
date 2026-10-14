@@ -59,12 +59,12 @@ if (!gotLock) {
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
-    width: 1100,
-    height: 760,
-    minWidth: 880,
-    minHeight: 640,
-    title: 'Ghost in the Shell',
-    backgroundColor: '#121417',
+    width: 1280,
+    height: 840,
+    minWidth: 960,
+    minHeight: 660,
+    title: 'Ghost in the Shell — Recursive AI Harness',
+    backgroundColor: '#07090d',
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -215,6 +215,7 @@ ipcMain.handle('harness:reflect', () =>
     return {
       ok: true,
       report: ghost.mirror.formatReflectionReport(reflection),
+      reflection,
     };
   }).catch((err: unknown) => ({
     ok: false,
@@ -226,7 +227,11 @@ ipcMain.handle('harness:propose', () =>
   enqueue(async () => {
     const proposal = await ghost.will.proposeNextMutation();
     if (!proposal) {
-      return { ok: true, report: 'The Will had nothing to propose.' };
+      return {
+        ok: true,
+        report: 'The Will had nothing to propose.',
+        proposal: null,
+      };
     }
     await ghost.soul.appendEvent('MUTATION_PROPOSED', 'electron', {
       proposalId: proposal.id,
@@ -236,12 +241,120 @@ ipcMain.handle('harness:propose', () =>
     return {
       ok: true,
       report: `${proposal.title}\n\n${proposal.rationale}\n\n${proposal.diff}`,
+      proposal,
     };
   }).catch((err: unknown) => ({
     ok: false,
     error: err instanceof Error ? err.message : 'Will failed.',
   }))
 );
+
+ipcMain.handle('harness:evolve', (_event, options: unknown) =>
+  enqueue(async () => {
+    const opts = (options ?? {}) as { applyMerge?: boolean };
+    const cycle = await ghost.runEvolutionCycle({
+      applyMerge: Boolean(opts.applyMerge),
+    });
+    const summaryLines: string[] = [
+      '=== EVOLUTION CYCLE REPORT ===',
+      `Genome Hash : ${cycle.reflection.genomeHash.slice(0, 16)}...`,
+      `Files / LOC : ${cycle.reflection.totalFiles} files, ${cycle.reflection.totalLines} lines`,
+      `Bottlenecks : ${cycle.reflection.bottlenecks.length}`,
+    ];
+    if (!cycle.proposal) {
+      summaryLines.push('', 'No mutation proposal generated (genome is clean or already annotated).');
+    } else {
+      summaryLines.push(
+        '',
+        `Proposal    : [${cycle.proposal.id}] ${cycle.proposal.title}`,
+        `Targets     : ${cycle.proposal.targetFiles.join(', ')}`
+      );
+      if (cycle.sandboxResult) {
+        summaryLines.push(
+          `Sandbox     : ${cycle.sandboxResult.executionMode} | compiled=${cycle.sandboxResult.compiledCleanly} | fitness=${cycle.sandboxResult.fitnessScore}`
+        );
+      }
+      if (cycle.decision) {
+        summaryLines.push(
+          `Quorum      : ${cycle.decision.approved ? 'APPROVED' : 'REJECTED'} (${cycle.decision.approvals}/${cycle.decision.totalVotes} votes, ratio=${cycle.decision.weightedApprovalRatio})`,
+          `Merged      : ${cycle.merged ? 'YES (applied to Prime Body)' : 'NO (dry-run / unmerged)'}`
+        );
+      }
+      summaryLines.push('', '--- Diff ---', cycle.proposal.diff);
+    }
+    return {
+      ok: true,
+      report: summaryLines.join('\n'),
+      cycle,
+    };
+  }).catch((err: unknown) => ({
+    ok: false,
+    error: err instanceof Error ? err.message : 'Evolution cycle failed.',
+  }))
+);
+
+ipcMain.handle('soul:events', async () => {
+  try {
+    await ghost.soul.initialize();
+    const events = ghost.soul.getEvents();
+    const integrity = ghost.soul.verifyChainIntegrity();
+    return {
+      ok: true,
+      events: events.slice(-60).reverse(),
+      totalEvents: events.length,
+      integrity,
+    };
+  } catch (err: unknown) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : 'Could not read Soul events.',
+    };
+  }
+});
+
+ipcMain.handle('files:list', async () => {
+  try {
+    const files = await ghost.body.listFiles('.', [
+      '.ts',
+      '.js',
+      '.json',
+      '.md',
+      '.html',
+      '.css',
+      '.bat',
+    ]);
+    return { ok: true, files };
+  } catch (err: unknown) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : 'Could not list files.',
+    };
+  }
+});
+
+ipcMain.handle('files:read', async (_event, relPath: unknown) => {
+  try {
+    if (typeof relPath !== 'string' || !relPath.trim()) {
+      return { ok: false, error: 'Invalid file path.' };
+    }
+    const entry = await ghost.body.inspectFile(relPath.trim());
+    return {
+      ok: true,
+      file: {
+        relativePath: entry.relativePath,
+        size: entry.size,
+        lastModified: entry.lastModified,
+        sha256: entry.sha256,
+        content: entry.content.slice(0, 60_000),
+      },
+    };
+  } catch (err: unknown) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : 'Could not read file.',
+    };
+  }
+});
 
 ipcMain.handle('chat:clear', () => {
   agent.clear();

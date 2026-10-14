@@ -4,70 +4,337 @@
     <meta charset="UTF-8" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; style-src 'self'; script-src 'self'"
+      content="default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:"
     />
-    <title>Ghost in the Shell</title>
+    <title>Ghost in the Shell — Recursive AI Harness</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <div class="app">
-      <aside>
-        <header>
-          <h1>Ghost</h1>
-          <p class="sub">Ollama Cloud agent on the local harness</p>
+      <aside class="sidebar">
+        <header class="brand">
+          <div class="brand-logo" aria-hidden="true">
+            <svg viewBox="0 0 64 64" width="38" height="38" fill="none">
+              <path
+                d="M14 48C10 38 11 22 20 14C26 9 38 9 44 14C53 22 54 38 50 48"
+                stroke="#d6e4f0"
+                stroke-width="1.6"
+                stroke-linecap="round"
+              />
+              <path
+                d="M6 38C8 24 14 14 23 9M58 38C56 24 50 14 41 9"
+                stroke="#3a506b"
+                stroke-width="1.4"
+                stroke-linecap="round"
+              />
+              <path
+                d="M24 44V30L32 24L40 30V44"
+                stroke="#7dd3fc"
+                stroke-width="1.5"
+                stroke-linejoin="round"
+              />
+              <line x1="32" y1="24" x2="32" y2="48" stroke="#7dd3fc" stroke-width="1.4" />
+              <circle cx="32" cy="18" r="4" fill="#00f0ff" />
+              <circle cx="32" cy="18" r="7" stroke="#00f0ff" stroke-opacity="0.35" stroke-width="1.2" />
+              <circle cx="24" cy="44" r="2" fill="#d6e4f0" />
+              <circle cx="40" cy="44" r="2" fill="#d6e4f0" />
+              <circle cx="32" cy="48" r="2" fill="#00f0ff" />
+            </svg>
+          </div>
+          <div class="brand-copy">
+            <div class="brand-title-row">
+              <h1>GHOST</h1>
+              <span id="connBadge" class="badge badge-warn">NO KEY</span>
+            </div>
+            <p class="sub">Recursive AI Evolution Harness</p>
+          </div>
         </header>
 
-        <label for="apiKey">API key</label>
-        <input
-          id="apiKey"
-          type="password"
-          autocomplete="off"
-          spellcheck="false"
-          placeholder="Paste a key to replace the saved one"
-        />
+        <section class="panel-card">
+          <div class="card-header">
+            <h2>Ollama Cloud Link</h2>
+            <button id="keyLink" class="link-btn" type="button" title="Open Ollama Cloud API Keys page">
+              Get Key ↗
+            </button>
+          </div>
 
-        <label for="model">Model</label>
-        <input id="model" list="models" spellcheck="false" />
-        <datalist id="models"></datalist>
+          <label for="apiKey">API Key</label>
+          <div class="input-group">
+            <input
+              id="apiKey"
+              type="password"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="Paste key to update saved token"
+            />
+            <button
+              id="toggleKeyVis"
+              class="icon-btn"
+              type="button"
+              title="Show or hide API key"
+              aria-label="Toggle API key visibility"
+            >
+              👁
+            </button>
+          </div>
 
-        <div class="row">
-          <button id="save" type="button">Save</button>
-          <button id="refreshModels" type="button">Models</button>
-          <button id="clearKey" type="button">Forget key</button>
-        </div>
-        <p id="keyStatus" class="hint"></p>
-        <button id="keyLink" class="link" type="button">Create an API key</button>
+          <label for="model">Active Cloud Model</label>
+          <div class="input-group">
+            <input id="model" list="models" spellcheck="false" placeholder="e.g. gemma4:31b" />
+            <datalist id="models"></datalist>
+            <button id="refreshModels" class="icon-btn" type="button" title="Fetch models from Ollama Cloud">
+              ↻
+            </button>
+          </div>
 
-        <hr />
+          <div class="row">
+            <button id="save" class="btn-primary" type="button">Save Config</button>
+            <button id="clearKey" class="btn-ghost" type="button">Forget Key</button>
+          </div>
+          <p id="keyStatus" class="hint status-line"></p>
+        </section>
 
-        <h2>Harness</h2>
-        <p id="root" class="hint"></p>
-        <div class="row">
-          <button id="reflect" type="button">Reflect</button>
-          <button id="propose" type="button">Propose</button>
-        </div>
-        <pre id="report">Reflect reads this repo. Propose asks the Will for a diff and does not apply it.</pre>
+        <section class="panel-card">
+          <div class="card-header">
+            <h2>Prime Body Telemetry</h2>
+            <span id="telemetryUptime" class="mono-tag">0s</span>
+          </div>
+          <div class="telemetry-grid">
+            <div class="telemetry-item">
+              <span class="t-label">Host</span>
+              <span id="telPlatform" class="t-val">—</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="t-label">Runtime</span>
+              <span id="telNode" class="t-val">—</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="t-label">Memory</span>
+              <span id="telMem" class="t-val">—</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="t-label">Genome</span>
+              <span id="telGenome" class="t-val mono">—</span>
+            </div>
+          </div>
+          <p id="root" class="hint root-path" title="Harness root directory"></p>
+        </section>
+
+        <section class="panel-card harness-ops">
+          <div class="card-header">
+            <h2>Harness Operations</h2>
+            <span id="bottleneckPill" class="badge badge-neutral">0 bottlenecks</span>
+          </div>
+          <div class="ops-grid">
+            <button id="reflect" class="op-btn" type="button" title="Run Phase 1 AST Mirror reflection">
+              <span class="op-title">Mirror Reflect</span>
+              <span class="op-desc">AST &amp; complexity scan</span>
+            </button>
+            <button id="propose" class="op-btn" type="button" title="Ask WillEngine to synthesize a diff">
+              <span class="op-title">Will Propose</span>
+              <span class="op-desc">Synthesize git diff</span>
+            </button>
+            <button id="evolveDry" class="op-btn op-accent" type="button" title="Run Mirror + Will + Purgatory Sandbox + Swarm-Soul Quorum (dry-run)">
+              <span class="op-title">Evolution Cycle</span>
+              <span class="op-desc">Sandbox + Quorum test</span>
+            </button>
+          </div>
+          <div class="report-box">
+            <div class="report-header">
+              <span>Diagnostic Output</span>
+              <button id="copyReport" class="micro-btn" type="button">Copy</button>
+            </div>
+            <pre id="report">Reflect reads this repo. Propose asks the Will for a diff and does not apply it.</pre>
+          </div>
+        </section>
       </aside>
 
-      <main>
-        <div id="transcript">
-          <p id="empty" class="empty">
-            Messages and tool results are sent to Ollama Cloud. The agent can
-            read and edit this project, and it can run git, npm, and node here.
-          </p>
-        </div>
-        <form id="composer">
-          <textarea
-            id="input"
-            rows="3"
-            placeholder="Ask about this repo"
-          ></textarea>
-          <div class="row composer-actions">
-            <p id="status" class="hint"></p>
-            <button id="clear" type="button">Clear</button>
-            <button id="send" type="submit">Send</button>
+      <main class="workspace">
+        <header class="topbar">
+          <nav class="tabs" role="tablist">
+            <button class="tab active" data-tab="console" role="tab" aria-selected="true" type="button">
+              <span class="tab-dot"></span> Neural Console
+            </button>
+            <button class="tab" data-tab="mirror" role="tab" aria-selected="false" type="button">
+              Mirror &amp; Genome <span id="tabFilesCount" class="tab-count"></span>
+            </button>
+            <button class="tab" data-tab="soul" role="tab" aria-selected="false" type="button">
+              Swarm-Soul Ledger <span id="tabSoulCount" class="tab-count"></span>
+            </button>
+            <button class="tab" data-tab="files" role="tab" aria-selected="false" type="button">
+              Source Inspector
+            </button>
+          </nav>
+          <div class="topbar-meta">
+            <span id="activeModelPill" class="model-pill">Model: —</span>
+            <span id="chainIntegrityPill" class="integrity-pill ok">Soul Chain: Verified</span>
           </div>
-        </form>
+        </header>
+
+        <!-- TAB 1: NEURAL CONSOLE (CHAT) -->
+        <section id="view-console" class="tab-view active" role="tabpanel">
+          <div id="transcript" class="transcript">
+            <div id="empty" class="empty-state">
+              <div class="empty-hero">
+                <div class="hero-emblem">
+                  <span class="core-pulse"></span>
+                </div>
+                <h3>GHOST-IN-THE-SHELL NEURAL CONSOLE</h3>
+                <p class="empty">
+                  Messages and tool results are routed through Ollama Cloud over the local BodyHarness.
+                  Ghost can introspect its AST genome, read &amp; write files (with automatic TypeScript
+                  rollback protection), propose mutations, and run project commands.
+                </p>
+              </div>
+              <div class="quick-prompts">
+                <span class="qp-label">Quick Directives:</span>
+                <div class="qp-grid">
+                  <button class="qp-chip" data-prompt="Run reflect on the codebase and summarize the architecture and top complexity bottlenecks." type="button">
+                    🪞 Reflect &amp; summarize bottlenecks
+                  </button>
+                  <button class="qp-chip" data-prompt="Propose a mutation using propose_mutation and explain what it changes and why." type="button">
+                    ⚡ Propose a self-mutation diff
+                  </button>
+                  <button class="qp-chip" data-prompt="Run tsc -p tsconfig.electron.json --noEmit using exec_command and verify the build is clean." type="button">
+                    🛡️ Verify TypeScript build health
+                  </button>
+                  <button class="qp-chip" data-prompt="Search the codebase for SwarmSoul and explain how the hash-chained consensus layer works." type="button">
+                    🔗 Explain Swarm-Soul consensus
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <form id="composer" class="composer">
+            <div class="composer-input-wrap">
+              <textarea
+                id="input"
+                rows="3"
+                placeholder="Transmit directive to Ghost… (Enter to send, Shift+Enter for newline)"
+              ></textarea>
+            </div>
+            <div class="row composer-actions">
+              <div class="status-indicator">
+                <span id="busyPulse" class="pulse-dot hidden"></span>
+                <p id="status" class="hint"></p>
+              </div>
+              <div class="composer-buttons">
+                <button id="clear" class="btn-ghost" type="button" title="Clear conversation history">
+                  Clear Session
+                </button>
+                <button id="send" class="btn-send" type="submit">
+                  Transmit ↵
+                </button>
+              </div>
+            </div>
+          </form>
+        </section>
+
+        <!-- TAB 2: MIRROR & GENOME -->
+        <section id="view-mirror" class="tab-view" role="tabpanel">
+          <div class="view-toolbar">
+            <div>
+              <h3>Phase 1: The Mirror — AST Introspection &amp; Bottleneck Radar</h3>
+              <p class="hint">Live structural analysis of Ghost's mutable TypeScript genome.</p>
+            </div>
+            <div class="row">
+              <button id="mirrorRefreshBtn" class="btn-primary" type="button">Run Mirror Pass</button>
+              <button id="mirrorProposeBtn" class="btn-ghost" type="button">Synthesize Proposal</button>
+            </div>
+          </div>
+
+          <div class="stats-strip">
+            <div class="stat-card">
+              <span class="stat-label">Genome SHA-256</span>
+              <span id="statGenomeHash" class="stat-value mono">—</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Source Modules</span>
+              <span id="statTotalFiles" class="stat-value">—</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Lines of Code</span>
+              <span id="statTotalLines" class="stat-value">—</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">AST Symbols</span>
+              <span id="statTotalSymbols" class="stat-value">—</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Avg Complexity</span>
+              <span id="statAvgComplexity" class="stat-value">—</span>
+            </div>
+          </div>
+
+          <div class="mirror-columns">
+            <div class="mirror-col">
+              <h4 class="section-subtitle">Detected Bottlenecks</h4>
+              <div id="bottleneckList" class="card-list">
+                <p class="hint">Click "Run Mirror Pass" to analyze the codebase.</p>
+              </div>
+            </div>
+            <div class="mirror-col">
+              <h4 class="section-subtitle">Module &amp; Symbol Inventory</h4>
+              <div id="moduleInventory" class="card-list">
+                <p class="hint">Module metrics will appear here after reflection.</p>
+              </div>
+            </div>
+          </div>
+
+          <div id="proposalViewerWrap" class="proposal-viewer hidden">
+            <div class="proposal-header">
+              <h4 id="proposalTitle">Mutation Proposal</h4>
+              <button id="sendProposalToChat" class="micro-btn" type="button">Discuss in Console</button>
+            </div>
+            <p id="proposalRationale" class="hint"></p>
+            <div id="proposalDiff" class="diff-view"></div>
+          </div>
+        </section>
+
+        <!-- TAB 3: SWARM-SOUL LEDGER -->
+        <section id="view-soul" class="tab-view" role="tabpanel">
+          <div class="view-toolbar">
+            <div>
+              <h3>The Soul — Hash-Chained Event Log &amp; Consensus Quorum</h3>
+              <p class="hint">Cryptographically linked audit trail in <code>.swarm-soul/event-log.jsonl</code>.</p>
+            </div>
+            <div class="row">
+              <button id="soulRefreshBtn" class="btn-primary" type="button">Refresh Ledger</button>
+            </div>
+          </div>
+
+          <div id="soulEventsList" class="soul-ledger">
+            <p class="hint">Loading Swarm-Soul event chain…</p>
+          </div>
+        </section>
+
+        <!-- TAB 4: SOURCE INSPECTOR -->
+        <section id="view-files" class="tab-view" role="tabpanel">
+          <div class="files-layout">
+            <div class="files-sidebar">
+              <div class="files-sidebar-header">
+                <span>Workspace Files</span>
+                <button id="filesRefreshBtn" class="micro-btn" type="button">↻</button>
+              </div>
+              <input id="fileFilter" type="text" placeholder="Filter files…" spellcheck="false" />
+              <div id="fileTree" class="file-tree"></div>
+            </div>
+            <div class="file-viewer">
+              <div class="file-viewer-header">
+                <div>
+                  <span id="fileViewerPath" class="mono">Select a file to inspect</span>
+                  <span id="fileViewerMeta" class="hint"></span>
+                </div>
+                <div class="row">
+                  <button id="askAboutFileBtn" class="micro-btn" type="button" disabled>Ask Ghost about file</button>
+                  <button id="copyFileBtn" class="micro-btn" type="button" disabled>Copy Source</button>
+                </div>
+              </div>
+              <pre id="fileViewerContent" class="code-viewer">Choose a file from the left panel to inspect its contents and SHA-256 genome digest.</pre>
+            </div>
+          </div>
+        </section>
       </main>
     </div>
     <script src="renderer.js"></script>
